@@ -16,11 +16,20 @@ from django.utils.encoding import force_unicode, smart_str
 from django.utils.hashcompat import md5_constructor
 from cuddlybuddly.thumbnail.exceptions import ThumbnailException
 
+FORMATS_TO_EXT = {
+    'JPEG': '.jpg',
+    'PNG': '.png',
+    'GIF': '.gif'
+}
 
-def build_thumbnail_name(source, width, height, quality):
+def build_thumbnail_name(source, width, height, quality, format=None):
     source = force_unicode(source)
     path, filename = os.path.split(source)
     basename, ext = os.path.splitext(filename)
+    
+    if format and FORMATS_TO_EXT.has_key(format):
+        ext = FORMATS_TO_EXT[format]
+    
     name = '%s%s' % (basename, ext.replace(os.extsep, '_'))
     thumbnail = '%s_%sx%s_q%s%s' % (name, width, height, quality, ext)
     return os.path.join(
@@ -32,15 +41,14 @@ def build_thumbnail_name(source, width, height, quality):
 
 
 class Thumbnail(object):
-    def __init__(self, source, width, height, quality=50, dest=None):
+    def __init__(self, source, width, height, quality=50, format=None):
         self.source = source
         self.width = width
         self.height = height
         self.quality = quality
-        if dest is None:
-            dest = build_thumbnail_name(source, width, height, quality)
+        self.format = format
+        dest = build_thumbnail_name(source, width, height, quality, format)
         self.dest = dest
-        self.final_dest = dest # May be rewritten later
         self.cache_dir = getattr(settings, 'CUDDLYBUDDLY_THUMBNAIL_CACHE', None)
 
         for var in ('width', 'height', 'quality'):
@@ -145,8 +153,8 @@ class Thumbnail(object):
             format = 'JPEG'
             dest = self.dest
             
-        # Force JPEG
-        format = 'JPEG'
+        if self.format:
+            format = self.format
         
         # x, y = [float(v) for v in data.size]
         # xr, yr = [float(v) for v in (self.width, self.height)]
@@ -156,7 +164,7 @@ class Thumbnail(object):
         #                        resample=Image.ANTIALIAS)
         # if data.mode not in ("L", "RGB", "RGBA"):
         #     data = data.convert("RGB")
-
+        
         data.thumbnail((self.width, self.height), Image.ANTIALIAS)
 
         try:
@@ -176,13 +184,6 @@ class Thumbnail(object):
             dest.seek(0)
         else:
             filename = force_unicode(self.dest)
-            
-            # Force JPEG
-            base, ext = os.path.splitext(filename)
-            filename = "%s.jpg" % base
-            
-            # Destination after rewriting
-            self.final_dest = filename
             
             if default_storage.exists(filename):
                 default_storage.delete(filename)

@@ -9,8 +9,7 @@ register = template.Library()
 
 
 class ThumbnailNode(template.Node):
-    def __init__(self, source, width, height, quality=None, dest=None,
-                 as_var=None):
+    def __init__(self, source, width, height, quality=None, format=None):
         self.image_source = template.Variable(source)
         self.width = template.Variable(width)
         self.height = template.Variable(height)
@@ -18,11 +17,11 @@ class ThumbnailNode(template.Node):
             self.quality = template.Variable(quality)
         else:
             self.quality = None
-        if dest is not None:
-            self.dest = template.Variable(dest)
+        if format:
+            self.format = template.Variable(format)
         else:
-            self.dest = None
-        self.as_var = as_var
+            self.format = None
+        self.dest = None
 
     def render(self, context):
         vars = {
@@ -32,8 +31,6 @@ class ThumbnailNode(template.Node):
         }
         if self.quality is not None:
             vars['quality'] = self.quality.resolve(context)
-        if self.dest is not None:
-            vars['dest'] = self.dest.resolve(context)
         try:
             thumb = Thumbnail(**vars)
         except:
@@ -41,11 +38,8 @@ class ThumbnailNode(template.Node):
         else:
             thumb = force_unicode(thumb).replace(settings.MEDIA_ROOT, '')
             thumb = iri_to_uri('/'.join(thumb.strip('\\/').split(os.sep)))
-        if self.as_var:
-            context[self.as_var] = thumb
-            return ''
-        else:
-            return thumb
+
+        return thumb
 
 
 def do_thumbnail(parser, token):
@@ -59,16 +53,16 @@ def do_thumbnail(parser, token):
     Source and destination can be a file like object or a path as a string.
     """
 
+    as_var = False
+
     split_token = token.split_contents()
     vars = []
-    as_var = False
     for k, v in enumerate(split_token[1:]):
         if v == 'as':
             try:
                 while len(vars) < 5:
                     vars.append(None)
                 vars.append(split_token[k+2])
-                as_var = True
             except IndexError:
                 raise template.TemplateSyntaxError, \
                       "%r tag requires a variable name to attach to" \
