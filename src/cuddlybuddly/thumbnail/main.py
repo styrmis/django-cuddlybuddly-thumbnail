@@ -180,6 +180,9 @@ class Thumbnail(object):
             base, ext = os.path.splitext(filename)
             filename = "%s.jpg" % base
             
+            # Destination after rewriting
+            self.final_dest = filename
+            
             if default_storage.exists(filename):
                 default_storage.delete(filename)
             default_storage.save(filename, ContentFile(dest.getvalue()))
