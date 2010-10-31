@@ -32,7 +32,7 @@ def build_thumbnail_name(source, width, height, quality):
 
 
 class Thumbnail(object):
-    def __init__(self, source, width, height, quality=85, dest=None):
+    def __init__(self, source, width, height, quality=50, dest=None):
         self.source = source
         self.width = width
         self.height = height
@@ -143,15 +143,20 @@ class Thumbnail(object):
         else:
             format = 'JPEG'
             dest = self.dest
+            
+        # Force JPEG
+        format = 'JPEG'
+        
+        # x, y = [float(v) for v in data.size]
+        # xr, yr = [float(v) for v in (self.width, self.height)]
+        # r = min(xr / x, yr / y)
+        # if r < 1.0:
+        #     data = data.resize((int(x * r), int(y * r)),
+        #                        resample=Image.ANTIALIAS)
+        # if data.mode not in ("L", "RGB", "RGBA"):
+        #     data = data.convert("RGB")
 
-        x, y = [float(v) for v in data.size]
-        xr, yr = [float(v) for v in (self.width, self.height)]
-        r = min(xr / x, yr / y)
-        if r < 1.0:
-            data = data.resize((int(x * r), int(y * r)),
-                               resample=Image.ANTIALIAS)
-        if data.mode not in ("L", "RGB", "RGBA"):
-            data = data.convert("RGB")
+        data.thumbnail((self.width, self.height), Image.ANTIALIAS)
 
         try:
             data.save(dest, format=format, quality=self.quality,
@@ -170,6 +175,11 @@ class Thumbnail(object):
             dest.seek(0)
         else:
             filename = force_unicode(self.dest)
+            
+            # Force JPEG
+            base, ext = os.path.splitext(filename)
+            filename = "%s.jpg" % base
+            
             if default_storage.exists(filename):
                 default_storage.delete(filename)
             default_storage.save(filename, ContentFile(dest.getvalue()))
