@@ -40,6 +40,7 @@ class Thumbnail(object):
         if dest is None:
             dest = build_thumbnail_name(source, width, height, quality)
         self.dest = dest
+        self.final_dest = dest # May be rewritten later
         self.cache_dir = getattr(settings, 'CUDDLYBUDDLY_THUMBNAIL_CACHE', None)
 
         for var in ('width', 'height', 'quality'):
