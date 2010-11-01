@@ -17,10 +17,7 @@ class ThumbnailNode(template.Node):
             self.quality = template.Variable(quality)
         else:
             self.quality = None
-        if format:
-            self.format = template.Variable(format)
-        else:
-            self.format = None
+        self.format = format
         self.dest = None
 
     def render(self, context):
@@ -31,6 +28,8 @@ class ThumbnailNode(template.Node):
         }
         if self.quality is not None:
             vars['quality'] = self.quality.resolve(context)
+        if self.format is not None:
+            vars['format'] =  self.format
         try:
             thumb = Thumbnail(**vars)
         except:
