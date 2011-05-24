@@ -50,6 +50,8 @@ class Thumbnail(object):
         dest = build_thumbnail_name(source, width, height, quality, format)
         self.dest = dest
         self.cache_dir = getattr(settings, 'CUDDLYBUDDLY_THUMBNAIL_CACHE', None)
+        
+        self.exists = True
 
         for var in ('width', 'height', 'quality'):
             try:
@@ -129,16 +131,21 @@ class Thumbnail(object):
                     if not hasattr(self.source, 'read'):
                         source = force_unicode(self.source)
                         if not default_storage.exists(source):
-                            raise ThumbnailException('Source does not exist: %s'
-                                                     % self.source)
-                        file = default_storage.open(source, 'rb')
-                        content = ContentFile(file.read())
-                        file.close()
+                            self.source_exists = False
+                            # raise ThumbnailException('Source does not exist: %s'
+                            #                                                      % self.source)
+                        else:
+                            file = default_storage.open(source, 'rb')
+                            content = ContentFile(file.read())
+                            file.close()
                     else:
                         content = ContentFile(self.source.read())
                 else:
                     content = ContentFile(self.source.read())
-                data = Image.open(content)
+                if self.source_exists:
+                    data = Image.open(content)
+                else:
+                    data = Image.new('RGB', (self.width, self.height), 'white')
             except IOError, detail:
                 raise ThumbnailException('%s: %s' % (detail, self.source))
             except MemoryError:
